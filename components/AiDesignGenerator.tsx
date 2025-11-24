@@ -30,7 +30,7 @@ const AiDesignGenerator: React.FC<AiDesignGeneratorProps> = ({ onUseDesign }) =>
 
         try {
             // Ensure we use process.env.API_KEY as per guidelines and consistency
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
             
             // تحسين الطلب للحصول على نتائج واقعية
             const finalPrompt = `
@@ -44,7 +44,7 @@ const AiDesignGenerator: React.FC<AiDesignGeneratorProps> = ({ onUseDesign }) =>
 
             // Using the correct model for image generation
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash-image',
+                model: 'gemini-1.5-flash-image',
                 contents: {
                     parts: [{ text: finalPrompt }]
                 },
