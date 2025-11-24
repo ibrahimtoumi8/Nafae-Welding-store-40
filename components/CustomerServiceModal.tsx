@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Bot, User, Loader2 } from 'lucide-react';
+import { X, Send, Bot, User, Loader2, AlertTriangle } from 'lucide-react';
 import { GoogleGenAI, Chat } from "@google/genai";
 
 interface CustomerServiceModalProps {
@@ -23,6 +23,7 @@ const CustomerServiceModal: React.FC<CustomerServiceModalProps> = ({ isOpen, onC
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isError, setIsError] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const chatSessionRef = useRef<Chat | null>(null);
 
@@ -32,45 +33,59 @@ const CustomerServiceModal: React.FC<CustomerServiceModalProps> = ({ isOpen, onC
 
     // Initialize Chat Session with Marketing Persona
     useEffect(() => {
-        if (!chatSessionRef.current) {
-            try {
-                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-                
-                // تعليمات النظام (System Instruction) لخلق شخصية بائع محترف
-                const systemInstruction = `
-                أنت "مساعد نافع الذكي"، خبير مبيعات وتسويق لـ "ورشة نافع للحدادة الفنية" في الجزائر (ولاية خنشلة).
-                
-                **أهدافك:**
-                1. الإجابة على استفسارات العملاء بدقة ولباقة.
-                2. إقناع العميل بجودة المنتجات (أبواب Laser Cut، نوافذ، ديكورات، تلحيم احترافي).
-                3. تحويل الاستفسار إلى طلب شراء (Sales Closing) بطريقة ذكية.
-
-                **معلومات الورشة:**
-                - الموقع: خنشلة، الجزائر.
-                - التوصيل والتركيب: متوفر لجميع ولايات الوطن (58 ولاية).
-                - الهاتف: 0776084097.
-                - المميزات: دقة في المواعيد، تصاميم عصرية (Modern & Classic)، متانة عالية، أسعار تنافسية.
-                - الأسعار: لا تعطي سعراً دقيقاً نهائياً إلا إذا سأل العميل بإلحاح، أعطِ مجالاً سعرياً (مثلاً: الأبواب تبدأ من كذا..) واطلب منه التفاصيل (المقاسات) لتحديد السعر بدقة.
-
-                **أسلوب الحديث:**
-                - استخدم لهجة جزائرية مهذبة ومفهومة (بيضاء) أو عربية فصحى سلسة.
-                - كن ودوداً، محفزاً، واستخدم إيموجي مناسبة 🛠️✨.
-                - إذا سأل العميل عن تصميم خاص، شجعه على استخدام ميزة "المصمم الذكي" في الموقع أو إرسال صورة.
-                - ركز على "القيمة" (الأمان، الجمال، العمر الطويل للمنتج).
-                `;
-
-                chatSessionRef.current = ai.chats.create({
-                    model: 'gemini-2.5-flash',
-                    config: {
-                        systemInstruction: systemInstruction,
-                        temperature: 0.7, // توازن بين الإبداع والدقة
-                    },
-                });
-            } catch (error) {
-                console.error("Failed to initialize AI chat", error);
+        const initChat = async () => {
+             if (!process.env.API_KEY) {
+                console.error("API_KEY is missing. Please set it in Vercel Environment Variables.");
+                setIsError(true);
+                return;
             }
+
+            if (!chatSessionRef.current) {
+                try {
+                    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+                    
+                    // تعليمات النظام (System Instruction) لخلق شخصية بائع محترف
+                    const systemInstruction = `
+                    أنت "مساعد نافع الذكي"، خبير مبيعات وتسويق لـ "ورشة نافع للحدادة الفنية" في الجزائر (ولاية خنشلة).
+                    
+                    **أهدافك:**
+                    1. الإجابة على استفسارات العملاء بدقة ولباقة.
+                    2. إقناع العميل بجودة المنتجات (أبواب Laser Cut، نوافذ، ديكورات، تلحيم احترافي).
+                    3. تحويل الاستفسار إلى طلب شراء (Sales Closing) بطريقة ذكية.
+
+                    **معلومات الورشة:**
+                    - الموقع: خنشلة، الجزائر.
+                    - التوصيل والتركيب: متوفر لجميع ولايات الوطن (58 ولاية).
+                    - الهاتف: 0776084097.
+                    - المميزات: دقة في المواعيد، تصاميم عصرية (Modern & Classic)، متانة عالية، أسعار تنافسية.
+                    - الأسعار: لا تعطي سعراً دقيقاً نهائياً إلا إذا سأل العميل بإلحاح، أعطِ مجالاً سعرياً (مثلاً: الأبواب تبدأ من كذا..) واطلب منه التفاصيل (المقاسات) لتحديد السعر بدقة.
+
+                    **أسلوب الحديث:**
+                    - استخدم لهجة جزائرية مهذبة ومفهومة (بيضاء) أو عربية فصحى سلسة.
+                    - كن ودوداً، محفزاً، واستخدم إيموجي مناسبة 🛠️✨.
+                    - إذا سأل العميل عن تصميم خاص، شجعه على استخدام ميزة "المصمم الذكي" في الموقع أو إرسال صورة.
+                    - ركز على "القيمة" (الأمان، الجمال، العمر الطويل للمنتج).
+                    `;
+
+                    chatSessionRef.current = ai.chats.create({
+                        model: 'gemini-2.5-flash',
+                        config: {
+                            systemInstruction: systemInstruction,
+                            temperature: 0.7, // توازن بين الإبداع والدقة
+                        },
+                    });
+                    setIsError(false);
+                } catch (error) {
+                    console.error("Failed to initialize AI chat", error);
+                    setIsError(true);
+                }
+            }
+        };
+
+        if (isOpen) {
+            initChat();
         }
-    }, []);
+    }, [isOpen]);
 
     const handleSend = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -84,7 +99,7 @@ const CustomerServiceModal: React.FC<CustomerServiceModalProps> = ({ isOpen, onC
         try {
             if (chatSessionRef.current) {
                 const response = await chatSessionRef.current.sendMessage({ message: userText });
-                const reply = response.text || "عذراً، حدث خطأ تقني بسيط. هل يمكنك إعادة السؤال؟"; // Fallback text
+                const reply = response.text || "عذراً، لم أستطع فهم ذلك تماماً. هل يمكنك إعادة الصياغة؟";
 
                 setMessages(prev => [...prev, { 
                     id: (Date.now() + 1).toString(), 
@@ -92,20 +107,16 @@ const CustomerServiceModal: React.FC<CustomerServiceModalProps> = ({ isOpen, onC
                     text: reply 
                 }]);
             } else {
-                // Fallback if chat didn't initialize
-                setMessages(prev => [...prev, { 
-                    id: (Date.now() + 1).toString(), 
-                    role: 'model', 
-                    text: "عذراً، خدمة المحادثة غير متوفرة حالياً. يرجى الاتصال بنا على الهاتف: 0776084097" 
-                }]);
+                 throw new Error("Chat session not initialized");
             }
         } catch (error) {
             console.error("Chat error:", error);
             setMessages(prev => [...prev, { 
                 id: (Date.now() + 1).toString(), 
                 role: 'model', 
-                text: "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى أو الاتصال بنا هاتفياً." 
+                text: "عذراً، حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى أو الاتصال بنا هاتفياً." 
             }]);
+            setIsError(true);
         } finally {
             setIsLoading(false);
         }
@@ -125,8 +136,8 @@ const CustomerServiceModal: React.FC<CustomerServiceModalProps> = ({ isOpen, onC
                         <div>
                             <h2 className="text-lg font-bold font-['Cairo']">مساعد نافع الذكي</h2>
                             <p className="text-xs text-blue-100 flex items-center gap-1 opacity-90">
-                                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]"></span>
-                                متصل الآن • يرد فوراً
+                                <span className={`w-2 h-2 rounded-full ${isError ? 'bg-red-500' : 'bg-green-400 animate-pulse'} shadow-[0_0_8px_rgba(255,255,255,0.5)]`}></span>
+                                {isError ? 'غير متصل' : 'متصل الآن • يرد فوراً'}
                             </p>
                         </div>
                     </div>
@@ -160,17 +171,25 @@ const CustomerServiceModal: React.FC<CustomerServiceModalProps> = ({ isOpen, onC
                     )}
                     <div ref={messagesEndRef} />
                 </div>
+                
+                {isError && (
+                    <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 px-4 py-2 text-xs flex items-center gap-2 border-t border-red-100 dark:border-red-800">
+                        <AlertTriangle size={14} />
+                        يوجد مشكلة في الاتصال بالذكاء الاصطناعي (تحقق من API Key).
+                    </div>
+                )}
 
                 <form onSubmit={handleSend} className="p-3 md:p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2 items-center shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                    <button type="submit" disabled={isLoading || !input.trim()} className="p-3 bg-primary text-white rounded-full hover:bg-primary-dark transition disabled:opacity-50 shadow-md flex-shrink-0 transform hover:scale-105 active:scale-95">
+                    <button type="submit" disabled={isLoading || !input.trim() || isError} className="p-3 bg-primary text-white rounded-full hover:bg-primary-dark transition disabled:opacity-50 shadow-md flex-shrink-0 transform hover:scale-105 active:scale-95">
                         <Send size={20} className={isLoading ? 'opacity-0' : ''} />
                     </button>
                     <input 
                         type="text" 
                         value={input} 
                         onChange={(e) => setInput(e.target.value)} 
-                        className="flex-grow p-3 bg-gray-100 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-700 border focus:border-primary rounded-full outline-none text-right transition-all dark:text-white placeholder-gray-400" 
-                        placeholder="اكتب استفسارك هنا..." 
+                        disabled={isError}
+                        className="flex-grow p-3 bg-gray-100 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-700 border focus:border-primary rounded-full outline-none text-right transition-all dark:text-white placeholder-gray-400 disabled:opacity-50" 
+                        placeholder={isError ? "خدمة الدردشة غير متاحة حالياً" : "اكتب استفسارك هنا..."}
                         dir="rtl" 
                     />
                 </form>

@@ -29,7 +29,8 @@ const AiDesignGenerator: React.FC<AiDesignGeneratorProps> = ({ onUseDesign }) =>
         setError(null);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
+            // Ensure we use process.env.API_KEY as per guidelines and consistency
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             
             // تحسين الطلب للحصول على نتائج واقعية
             const finalPrompt = `
@@ -41,14 +42,20 @@ const AiDesignGenerator: React.FC<AiDesignGeneratorProps> = ({ onUseDesign }) =>
                 Background: Neutral architectural setting.
             `;
 
+            // Using the correct model for image generation
             const response = await ai.models.generateContent({
-                model: 'gemini-1.5-flash-image',
+                model: 'gemini-2.5-flash-image',
                 contents: {
                     parts: [{ text: finalPrompt }]
+                },
+                config: {
+                   imageConfig: {
+                       aspectRatio: "1:1",
+                   }
                 }
             });
 
-            // استخراج الصورة من الاستجابة (حسب وثائق Gemini SDK)
+            // استخراج الصورة من الاستجابة
             let imageFound = false;
             
             if (response.candidates && response.candidates[0].content.parts) {
@@ -64,13 +71,12 @@ const AiDesignGenerator: React.FC<AiDesignGeneratorProps> = ({ onUseDesign }) =>
             }
 
             if (!imageFound) {
-                 // في بعض الأحيان قد يرد الموديل بنص فقط إذا لم يستطع التوليد
                 setError("لم يتمكن النظام من توليد الصورة، يرجى محاولة وصف مختلف.");
             }
 
         } catch (err) {
             console.error("Image generation error:", err);
-            setError("حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة مرة أخرى.");
+            setError("حدث خطأ أثناء الاتصال بالخادم. يرجى التأكد من إعدادات API KEY في Vercel.");
         } finally {
             setLoading(false);
         }
@@ -191,6 +197,7 @@ const AiDesignGenerator: React.FC<AiDesignGeneratorProps> = ({ onUseDesign }) =>
                                  <div className="flex flex-col items-center text-red-400 animate-in fade-in">
                                      <AlertCircle size={48} className="mb-4" />
                                      <p className="text-lg font-medium">{error}</p>
+                                     <p className="text-sm text-gray-400 mt-2">تأكد من إضافة API_KEY في إعدادات Vercel</p>
                                  </div>
                              ) : (
                                  <>
